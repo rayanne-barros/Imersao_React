@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 const Box = styled.div`
-  background: #FFFFFF;
+  background: #ffffffd8;
   border-radius: 8px;
   
   padding: 16px;
@@ -59,3 +59,5 @@ const Box = styled.div`
 `;
 
 export default Box;
+
+
