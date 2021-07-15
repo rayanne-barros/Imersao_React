@@ -22,17 +22,42 @@ function ProfileSidebar(propriedades){
   )
 }
 
+function ProfileRelationsBox(props){
+  return (
+    <ProfileRelationsBoxWrapper>
+    <h2 className="smallTitle">
+      {props.title} ({props.items.length})
+    </h2>
+    
+    <ul>
+      {props.items.slice(0,6).map((itemAtual) => {
+        console.log(itemAtual);
+        return (
+          <li key={itemAtual.id}> 
+           <a
+                  href={`https://github.com/${itemAtual.login}`}
+                  key={itemAtual.id}
+                >
+                  <img src={`https://github.com/${itemAtual.login}.png`} />
+                  <span>{itemAtual.login}</span>
+                </a>
+              </li>
+            );
+          })}
+    </ul>  
+  </ProfileRelationsBoxWrapper>
+  )
+}
 export default function Home() {
 React.useState(['Alurakut']);
 const usuarioAleatorio = 'rayanne-barros'; 
 const [comunidades, setComunidades] = React.useState([{
     id: '123456789123',
     title: 'Eu odeio acordar cedo',
-    image: 'https://alurakut.vercel.app/capa-comunidade-01.jpg',
-    url: ' '     
+    image: 'https://alurakut.vercel.app/capa-comunidade-01.jpg'
     
 }]);
-// console.log('Nosso teste', );
+
 // const comunidades = ['Alurakut']
 const pessoasFavoritas = [
   'juunegreiros',
@@ -43,6 +68,20 @@ const pessoasFavoritas = [
   'felipefialho',
   'Lucasedqnunes'
 ]
+
+const [seguidores, setSeguidores] = React.useState([]); 
+React.useEffect(function() {
+  fetch('https://api.github.com/users/rayanne-barros/followers')
+  .then(function(respostaDoServidor){
+    return respostaDoServidor.json();
+  })
+  .then(function(respostaCompleta){
+    setSeguidores(respostaCompleta);
+  })
+
+}, [])
+
+console.log('seguidores antes do return', seguidores);
 
   return (
     <>
@@ -67,13 +106,11 @@ const pessoasFavoritas = [
 
                     console.log('Campo: ', dadosDoForm.get('title'));
                     console.log('Campo: ', dadosDoForm.get('image'));
-                    console.log('Campo: ', dadosDoForm.get('url'));
-
+                   
                     const comunidade = {
                       id: new Date().toISOString(),
                       title: dadosDoForm.get('title'),
-                      image: dadosDoForm.get('image'),
-                      url: dadosDoForm.get('url')
+                      image: dadosDoForm.get('image')                      
                     }
                     //comunidades.push('Alura Stars');
                     const comunidadesAtualizadas = [...comunidades, comunidade];
@@ -90,12 +127,7 @@ const pessoasFavoritas = [
                        placeholder="Coloque uma URL para usarmos de capa" name="image" aria-label="Coloque uma URL para usarmos de capa"
                     />
                   </div>
-
-                  <div>
-                    <input
-                       placeholder="Coloque a URL da sua comunidade" name="image" aria-label="Coloque a URL da sua comunidade" 
-                    />
-                  </div>
+                  
                   <button>
                     Criar comunidade
                   </button>
@@ -105,10 +137,11 @@ const pessoasFavoritas = [
         </div>
         
         <div className="profileRelationsArea" style={{gridArea: 'profileRelationsArea'}}>
-                      
+
+            <ProfileRelationsBox title="Seguidores" items={seguidores} />         
             <ProfileRelationsBoxWrapper>
               <h2 className="smallTitle">
-                Pessoas da Comunidades ({pessoasFavoritas.length})
+                Pessoas da Comunidade ({pessoasFavoritas.length})
               </h2>
               
               <ul>
