@@ -1,4 +1,6 @@
 import React from 'react';
+import nookies from 'nookies';
+import jwt from 'jsonwebtoken';
 import MainGrid from '../src/components/MainGrid';
 import Box from '../src/components/Box';
 import {AlurakutMenu, AlurakutProfileSidebarMenuDefault, OrkutNostalgicIconSet} from '../src/lib/AlurakutCommons';
@@ -31,7 +33,7 @@ function ProfileRelationsBox(props){
     
     <ul>
       {props.items.slice(0,6).map((itemAtual) => {
-        console.log(itemAtual);
+        
         return (
           <li key={itemAtual.id}> 
            <a
@@ -48,15 +50,10 @@ function ProfileRelationsBox(props){
   </ProfileRelationsBoxWrapper>
   )
 }
-export default function Home() {
+export default function Home(props) {
 React.useState(['Alurakut']);
-const usuarioAleatorio = 'rayanne-barros'; 
-const [comunidades, setComunidades] = React.useState([{
-    id: '123456789123',
-    title: 'Eu odeio acordar cedo',
-    image: 'https://alurakut.vercel.app/capa-comunidade-01.jpg'
-    
-}]);
+const usuarioAleatorio = props.githubUser; 
+const [comunidades, setComunidades] = React.useState([]);
 
 // const comunidades = ['Alurakut']
 const pessoasFavoritas = [
@@ -79,6 +76,30 @@ React.useEffect(function() {
     setSeguidores(respostaCompleta);
   })
 
+
+  fetch('https://graphql.datocms.com/', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'a6c5476ab12b0f325735925e5e12d8',
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    }, 
+    body: JSON.stringify({ "query": `query {
+      allCommunities{        
+        id
+        title
+        imageUrl
+        linkDaComunidade
+      }
+    }`})      
+  })
+  .then((response) => response.json()) 
+  .then((respostaCompleta) => {
+    const comunidadesDoDato = respostaCompleta.data.allCommunities;
+    console.log(comunidadesDoDato)
+    setComunidades(comunidadesDoDato)
+    
+  }) 
 }, [])
 
 console.log('seguidores antes do return', seguidores);
@@ -104,17 +125,33 @@ console.log('seguidores antes do return', seguidores);
                     e.preventDefault();
                     const dadosDoForm = new FormData(e.target);
 
-                    console.log('Campo: ', dadosDoForm.get('title'));
-                    console.log('Campo: ', dadosDoForm.get('image'));
+                    // console.log('Campo: ', dadosDoForm.get('title'));
+                    // console.log('Campo: ', dadosDoForm.get('image'));
                    
                     const comunidade = {
-                      id: new Date().toISOString(),
+                     
                       title: dadosDoForm.get('title'),
-                      image: dadosDoForm.get('image')                      
+                      imageUrl: dadosDoForm.get('image'),
+                      linkDaComunidade:
+                      dadosDoForm.get('link')
                     }
-                    //comunidades.push('Alura Stars');
-                    const comunidadesAtualizadas = [...comunidades, comunidade];
-                    setComunidades(comunidadesAtualizadas)
+
+                    fetch('/api/comunidades', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify(comunidade)
+                    })
+                    .then(async (response) => {
+                      const dados =  await response.json();
+                      console.log(dados.registroCriado);
+                      const comunidade = dados.registroCriado;
+                      const comunidadesAtualizadas = [...comunidades, comunidade];
+                      setComunidades(comunidadesAtualizadas)
+                    })
+                   
+                    
                   }}>
                   <div>
                     <input
@@ -125,6 +162,11 @@ console.log('seguidores antes do return', seguidores);
                   <div>
                     <input
                        placeholder="Coloque uma URL para usarmos de capa" name="image" aria-label="Coloque uma URL para usarmos de capa"
+                    />
+                  </div>
+                  <div>
+                    <input
+                       placeholder="Coloque a URL da sua comunidade " name="link" aria-label="Coloque a URL da sua comunidade"
                     />
                   </div>
                   
@@ -163,11 +205,11 @@ console.log('seguidores antes do return', seguidores);
                 Comunidades ({comunidades.length})
               </h2>
               <ul>
-                  {comunidades.map((itemAtual) => {
+                  {comunidades.slice(5,11).map((itemAtual) => {
                     return (
                       <li key={itemAtual.id}> 
-                        <a href={`/users/${itemAtual.title}`} >
-                           <img src={itemAtual.image} /> 
+                        <a href={`${itemAtual.linkDaComunidade}`} >
+                           <img src={itemAtual.imageUrl} /> 
                           <span>{itemAtual.title}</span>
                         </a>
                       </li>
@@ -182,3 +224,34 @@ console.log('seguidores antes do return', seguidores);
     </>
   )
 }
+
+export async function getServerSideProps(context) {
+  const cookies = nookies.get(context)
+  const token = cookies.USER_TOKEN;
+ 
+  const { isAuthenticated } = await fetch('http://localhost:3000/api/auth', {
+    headers: {
+        Authorization: token
+      }
+  })
+  .then((resposta) => resposta.json())
+
+  console.log(token)
+
+  if(!isAuthenticated) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      }
+    }
+  }
+
+  const { githubUser } = jwt.decode(token);
+  return {
+    props: {
+      githubUser
+    }, // will be passed to the page component as props
+  }
+} 
+
