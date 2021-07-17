@@ -229,15 +229,14 @@ export async function getServerSideProps(context) {
   const cookies = nookies.get(context)
   const token = cookies.USER_TOKEN;
  
-  const { isAuthenticated } = await fetch('http://localhost:3000/api/auth', {
+  const { isAuthenticated } = await fetch('https://alurakut1.vercel.app/api/auth', {
     headers: {
-        Authorization: token
-      }
+        Authorization: token,
+      },
   })
   .then((resposta) => resposta.json())
 
-  console.log(token)
-
+ 
   if(!isAuthenticated) {
     return {
       redirect: {
