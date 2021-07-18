@@ -4,6 +4,7 @@ import nookies from 'nookies';
 import jwt from 'jsonwebtoken';
 import MainGrid from '../src/components/MainGrid';
 import Box from '../src/components/Box';
+import DepBox from '../src/components/DepBox';
 import {AlurakutMenu, AlurakutProfileSidebarMenuDefault, OrkutNostalgicIconSet} from '../src/lib/AlurakutCommons';
 import { ProfileRelationsBoxWrapper } from '../src/components/ProfileRelations';
 
@@ -47,37 +48,27 @@ function ProfileRelationsBox(props){
   </ProfileRelationsBoxWrapper>
   )
 }
+
 export default function Home(props) {
 // React.useState(['Alurakut']);
 const githubUser = props.githubUser; 
 const [comunidades, setComunidades] = React.useState([]);
 const [seguidores, setSeguidores] = React.useState([]);
 const [seguindo, setSeguindo] = React.useState([]);
-
-// const pessoasFavoritas = [
-//   'juunegreiros',
-//   'omariosouto',
-//   'peas',
-//   'rafaballerini',
-//   'marcobrunodev',
-//   'felipefialho',
-//   'Lucasedqnunes'
-// ];
-
-;
+const [mensagens, setMensagens] = React.useState([]);
 
 React.useEffect(() => {
     if(githubUser){
       fetch(`https://api.github.com/users/${githubUser}/followers`)
-        .then(res => res.json())
-          .then(datas =>  {
+      .then(res => res.json())
+      .then(datas =>  {
             const seguidoresArray = datas.map((data) => {
               return {
                 title: data.login,
                 avatarUrl: data.avatar_url,
                 id: data.id
               }
-            // console.log(datas)
+             //console.log(datas)
             })
             setSeguidores(seguidoresArray)
           })     
@@ -123,9 +114,31 @@ React.useEffect(() => {
     setComunidades(comunidadesDoDato);
     
   }) 
+
+  fetch('https://graphql.datocms.com/', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'a6c5476ab12b0f325735925e5e12d8',
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify({
+      "query": `query{
+        allMessages{
+          id
+          name
+          mensagem          
+        }
+      }` })
+  })
+    .then((resposta) => resposta.json())
+    .then((respostaCompletaMensagem) => {
+      const mensagemDoDato = respostaCompletaMensagem.data.allMessages;
+      // console.log(postVindosDoDato);
+      setMensagens(mensagemDoDato);
+    })
 }, [])
 
-console.log('seguidores antes do return', seguidores);
 
   return (
     <>
@@ -142,59 +155,123 @@ console.log('seguidores antes do return', seguidores);
               </h1>
               <OrkutNostalgicIconSet />
               </Box>
-              <Box>
-                <h2 className="subTitle"> Deseja adicionar uma comunidade? </h2>
-                <form onSubmit={function handleSubmit(e){
-                    e.preventDefault();
-                    const dadosDoForm = new FormData(e.target);
-                   
-                    const comunidade = {
-                     
-                      title: dadosDoForm.get('title'),
-                      imageUrl: dadosDoForm.get('image'),
-                      linkDaComunidade:
-                      dadosDoForm.get('link')
-                    }
-
-                    fetch('/api/comunidades', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify(comunidade)
-                    })
-                    .then(async (response) => {
-                      const dados =  await response.json();
-                      // const comunidade = dados.registroCriado;
-                      const comunidadesAtualizadas = [...comunidades, dados.comunidade];
-                      setComunidades(comunidadesAtualizadas)
-                    })
-                   
+               <Box>
+                  <h2 className="subTitle"> Deseja adicionar uma comunidade? </h2>
+                  <form onSubmit={function handleSubmit(e){
+                      e.preventDefault();
+                      const dadosDoForm = new FormData(e.target);
                     
-                  }}>
-                  <div>
-                    <input
-                       placeholder="Qual o nome da sua comunidade?" name="title" aria-label="Qual o nome da sua comunidade?" type="text" 
-                    />
-                  </div>
+                      const comunidade = {
+                      
+                        title: dadosDoForm.get('title'),
+                        imageUrl: dadosDoForm.get('image'),
+                        linkDaComunidade:
+                        dadosDoForm.get('link')
+                      }
 
+                      fetch('/api/comunidades', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(comunidade)
+                      })
+                      .then(async (response) => {
+                        const dados =  await response.json();
+                        // const comunidade = dados.registroCriado;
+                        const comunidadesAtualizadas = [...comunidades, dados.comunidade];
+                        setComunidades(comunidadesAtualizadas)
+                      })
+                    
+                      
+                    }}>
+                    <div>
+                      <input
+                        placeholder="Qual o nome da sua comunidade?" name="title" aria-label="Qual o nome da sua comunidade?" type="text" 
+                      />
+                    </div>
+
+                    <div>
+                      <input
+                        placeholder="Coloque uma URL para usarmos de capa" name="image" aria-label="Coloque uma URL para usarmos de capa"
+                      />
+                    </div>
+                    <div>
+                      <input
+                        placeholder="Coloque a URL da sua comunidade " name="link" aria-label="Coloque a URL da sua comunidade"
+                      />
+                    </div>
+                    
+                    <button>
+                      Criar comunidade
+                    </button>
+                    
+                  </form>
+                </Box>
+                <Box>
+                <h2 className="subTitle">Deixe sua mensagem </h2>
+               
+                <form onSubmit={function handleSubmit(e){
+                  e.preventDefault();
+                  const dadosDoForm = new FormData(e.target);
+
+                  const mensagem = {
+
+                    name: dadosDoForm.get('name'),
+                    mensagem: dadosDoForm.get('mensagem'),
+                  }
+                  fetch('/api/mensagens', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(mensagem),
+                  })
+                  .then(async (response) => {
+                    const dados = await response.json();
+                      
+                      //mensagem = dados.registroCriado;
+                      const mensagensAtualizadas = [...mensagens, dados.registroCriado]
+                      setMensagens(mensagensAtualizadas);
+                  })
+                }}>
                   <div>
-                    <input
-                       placeholder="Coloque uma URL para usarmos de capa" name="image" aria-label="Coloque uma URL para usarmos de capa"
-                    />
+                      <input
+                        placeholder="Insira seu usuário do Github" name="name" aria-label="Insira seu usuário do Github" type="text" 
+                      />
                   </div>
                   <div>
-                    <input
-                       placeholder="Coloque a URL da sua comunidade " name="link" aria-label="Coloque a URL da sua comunidade"
-                    />
+                      <input
+                        placeholder="Deixe uma mensagem sobre esse projeto" name="mensagem" aria-label="Deixe uma mensagem" type="text" 
+                      />
                   </div>
                   
                   <button>
-                    Criar comunidade
+                      Criar mensagem
                   </button>
-                  
                 </form>
-              </Box> 
+          </Box>
+
+          <DepBox>
+            <h2 className="smallTitle"> Mensagem ({mensagens.length})</h2>
+
+            <ul>
+              {mensagens.map((itemAtual) => {
+                return (
+                  <li key={itemAtual.id}>
+                    <a href={`https://github.com/${itemAtual.name}`}>
+                      <img src={`https://github.com/${itemAtual.name}.png`} alt="Foto usuário" />
+                    </a>
+                    <div style={{ flexGrow: '2' }}>
+                      <span>@{itemAtual.name}</span>
+                      <p>{itemAtual.mensagem}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </DepBox> 
+           
         </div>
         
         <div className="profileRelationsArea" style={{gridArea: 'profileRelationsArea'}}>
