@@ -1,5 +1,5 @@
 
-# Alurakut - Imersão React
+# Imersão React- Alurakut 
 
 O projeto é uma versão do Orkut, criado com React, styled-components e next/js.
 
