@@ -1,4 +1,5 @@
 import React from 'react';
+
 import nookies from 'nookies';
 import jwt from 'jsonwebtoken';
 import MainGrid from '../src/components/MainGrid';
@@ -6,14 +7,14 @@ import Box from '../src/components/Box';
 import {AlurakutMenu, AlurakutProfileSidebarMenuDefault, OrkutNostalgicIconSet} from '../src/lib/AlurakutCommons';
 import { ProfileRelationsBoxWrapper } from '../src/components/ProfileRelations';
 
-function ProfileSidebar(propriedades){
+function ProfileSidebar(props){
   return(
     <Box as="aside">
-      <img src={`https://github.com/${propriedades.githubUser}.png`} style={{borderRadius: '8px'}} />
+      <img src={`https://github.com/${props.githubUser}.png`} style={{borderRadius: '8px'}} />
       <hr/>
       <p>
-        <a className="boxLink"  href={`https://github.com/${propriedades.githubUser}`} > 
-        @{propriedades.githubUser}
+        <a className="boxLink"  href={`https://github.com/${props.githubUser}`} > 
+        @{props.githubUser}
         </a>
       </p>
       
@@ -32,18 +33,14 @@ function ProfileRelationsBox(props){
     </h2>
     
     <ul>
-      {props.items.slice(0,6).map((itemAtual) => {
-        
+      {props.items.slice(0,6).map((itemAtual) => {        
         return (
-          <li key={itemAtual.id}> 
-           <a
-                  href={`https://github.com/${itemAtual.login}`}
-                  key={itemAtual.id}
-                >
-                  <img src={`https://github.com/${itemAtual.login}.png`} />
-                  <span>{itemAtual.login}</span>
-                </a>
-              </li>
+          <li key={itemAtual.id}>
+                   <a href={`https://github.com/${itemAtual.title}`} key={itemAtual.id}>
+                          <img src={`${itemAtual.avatarUrl}`}></img>
+                          <span>{itemAtual.title}</span>
+                   </a>
+            </li>
             );
           })}
     </ul>  
@@ -51,31 +48,57 @@ function ProfileRelationsBox(props){
   )
 }
 export default function Home(props) {
-React.useState(['Alurakut']);
-const usuarioAleatorio = props.githubUser; 
+// React.useState(['Alurakut']);
+const githubUser = props.githubUser; 
 const [comunidades, setComunidades] = React.useState([]);
+const [seguidores, setSeguidores] = React.useState([]);
+const [seguindo, setSeguindo] = React.useState([]);
 
-// const comunidades = ['Alurakut']
-const pessoasFavoritas = [
-  'juunegreiros',
-  'omariosouto',
-  'peas',
-  'rafaballerini',
-  'marcobrunodev',
-  'felipefialho',
-  'Lucasedqnunes'
-]
+// const pessoasFavoritas = [
+//   'juunegreiros',
+//   'omariosouto',
+//   'peas',
+//   'rafaballerini',
+//   'marcobrunodev',
+//   'felipefialho',
+//   'Lucasedqnunes'
+// ];
 
-const [seguidores, setSeguidores] = React.useState([]); 
-React.useEffect(function() {
-  fetch('https://api.github.com/users/rayanne-barros/followers')
-  .then(function(respostaDoServidor){
-    return respostaDoServidor.json();
-  })
-  .then(function(respostaCompleta){
-    setSeguidores(respostaCompleta);
-  })
+;
 
+React.useEffect(() => {
+    if(githubUser){
+      fetch(`https://api.github.com/users/${githubUser}/followers`)
+        .then(res => res.json())
+          .then(datas =>  {
+            const seguidoresArray = datas.map((data) => {
+              return {
+                title: data.login,
+                avatarUrl: data.avatar_url,
+                id: data.id
+              }
+            // console.log(datas)
+            })
+            setSeguidores(seguidoresArray)
+          })     
+  }
+
+    if(githubUser){
+      fetch (`https://api.github.com/users/${githubUser}/following`)  
+      .then(res => res.json())
+      .then(datas =>  {
+        const seguindoArray = datas.map((data) => {
+          return {
+            title: data.login,
+            avatarUrl: data.avatar_url,
+            id: data.id
+          }
+        // console.log(datas)
+        })
+        setSeguindo(seguindoArray)
+      }) 
+    }   
+        
 
   fetch('https://graphql.datocms.com/', {
     method: 'POST',
@@ -96,8 +119,8 @@ React.useEffect(function() {
   .then((response) => response.json()) 
   .then((respostaCompleta) => {
     const comunidadesDoDato = respostaCompleta.data.allCommunities;
-    console.log(comunidadesDoDato)
-    setComunidades(comunidadesDoDato)
+    // console.log(comunidadesDoDato)
+    setComunidades(comunidadesDoDato);
     
   }) 
 }, [])
@@ -106,27 +129,24 @@ console.log('seguidores antes do return', seguidores);
 
   return (
     <>
-      <AlurakutMenu githubUser={usuarioAleatorio}/>
+      <AlurakutMenu githubUser={githubUser}/>
       <MainGrid>
         <div className="profileArea" style={{gridArea: 'profileArea'}}>
-          <ProfileSidebar githubUser={usuarioAleatorio} />
+          <ProfileSidebar githubUser={githubUser} />
         </div>
 
         <div className="welcomeArea" style={{gridArea: 'welcomeArea'}}>
             <Box >
               <h1 className="title">
-                Bem vindo(a)
+                Bem vindo(a), {githubUser}!
               </h1>
               <OrkutNostalgicIconSet />
               </Box>
               <Box>
-                <h2 className="subTitle"> O que você deseja fazer? </h2>
+                <h2 className="subTitle"> Deseja adicionar uma comunidade? </h2>
                 <form onSubmit={function handleSubmit(e){
                     e.preventDefault();
                     const dadosDoForm = new FormData(e.target);
-
-                    // console.log('Campo: ', dadosDoForm.get('title'));
-                    // console.log('Campo: ', dadosDoForm.get('image'));
                    
                     const comunidade = {
                      
@@ -145,9 +165,8 @@ console.log('seguidores antes do return', seguidores);
                     })
                     .then(async (response) => {
                       const dados =  await response.json();
-                      console.log(dados.registroCriado);
-                      const comunidade = dados.registroCriado;
-                      const comunidadesAtualizadas = [...comunidades, comunidade];
+                      // const comunidade = dados.registroCriado;
+                      const comunidadesAtualizadas = [...comunidades, dados.comunidade];
                       setComunidades(comunidadesAtualizadas)
                     })
                    
@@ -180,32 +199,17 @@ console.log('seguidores antes do return', seguidores);
         
         <div className="profileRelationsArea" style={{gridArea: 'profileRelationsArea'}}>
 
-            <ProfileRelationsBox title="Seguidores" items={seguidores} />         
-            <ProfileRelationsBoxWrapper>
-              <h2 className="smallTitle">
-                Pessoas da Comunidade ({pessoasFavoritas.length})
-              </h2>
-              
-              <ul>
-                {pessoasFavoritas.slice(0,6).map((itemAtual) => {
-                  return (
-                    <li key={itemAtual}> 
-                      <a href={`/users/${itemAtual}`} >
-                        <img src={`https://github.com/${itemAtual}.png`} />
-                        <span>{itemAtual}</span>
-                      </a>
-                    </li>
-                  )
-                })}
-              </ul>             
+            <ProfileRelationsBox title="Seguidores" items={seguidores} />   
 
-            </ProfileRelationsBoxWrapper>
+            <ProfileRelationsBox title="Seguindo" items={seguindo} />
+
+            
             <ProfileRelationsBoxWrapper>
             <h2 className="smallTitle">
                 Comunidades ({comunidades.length})
               </h2>
               <ul>
-                  {comunidades.slice(5,11).map((itemAtual) => {
+                  {comunidades.slice(0,6).map((itemAtual) => {
                     return (
                       <li key={itemAtual.id}> 
                         <a href={`${itemAtual.linkDaComunidade}`} >
